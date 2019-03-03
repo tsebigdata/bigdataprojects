@@ -20,7 +20,6 @@ Created on Wed Feb 13 19:38:53 2019
 
 import pandas as pd
 import numpy as np
-import csv as csv
 import dask
 import dask.dataframe as dd
 from sklearn import preprocessing
@@ -28,6 +27,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import Imputer
+import dask.array as da
 
 
 #
@@ -109,47 +110,16 @@ X_d, y_d = train_set_clean[input_var], train_set_clean["fare_amount"]
 
 # ---------- Utiliser une librairie usuelle
 print("***** Statistiques de base : sample****")
-print(X.pickup_longitude.describe())
-print(X.pickup_latitude.describe())
-print(X.dropoff_longitude.describe())
-print(X.dropoff_latitude.describe())
-print(y.describe())
+X.describe()
+y.describe()
 
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
-# pickup_longitude statistiques de base
-moyenne, minimum, maximum = dask.compute(X_d.pickup_longitude.mean(), X_d.pickup_longitude.min(), X_d.pickup_longitude.max())
 
 print("***** Statistiques de base : Big data*****")
-médiane = X_d.pickup_longitude.compute().quantile([.5])
-print(moyenne, minimum, maximum, médiane)
+X_d.describe().compute()
+y_d.describe().compute
 
-# pickup_latitude statistiques de base
-moyenne, minimum, maximum = dask.compute(X_d.pickup_latitude.mean(), X_d.pickup_latitude.min(), X_d.pickup_latitude.max())
-
-médiane = X_d.pickup_latitude.compute().quantile([.5])
-
-print(moyenne, minimum, maximum, médiane)
-
-# dropoff_longitude statistiques de base
-moyenne, minimum, maximum = dask.compute(X_d.dropoff_longitude.mean(), X_d.dropoff_longitude.min(), X_d.dropoff_longitude.max())
-
-médiane = X_d.dropoff_longitude.compute().quantile([.5])
-
-print(moyenne, minimum, maximum, médiane)
-
-# dropoff_latitude statistiques de base
-moyenne, minimum, maximum = dask.compute(X_d.dropoff_latitude.mean(), X_d.dropoff_latitude.min(), X_d.dropoff_latitude.max())
-
-médiane = X_d.dropoff_latitude.compute().quantile([.5])
-
-print(moyenne, minimum, maximum, médiane)
-
-# Fare_amount statistiques de base
-print("***** Statistiques de base: Fare_amount*****")
-moyenne, minimum, maximum = y_d.compute(y.mean(), y.min(), y.max())
-médiane = y_d.compute().quantile([.5])
-print(moyenne, minimum, maximum, médiane)
 
 # Visualiser les distributions des variables d'entrée et de sortie (histogramme, pairplot)
 
@@ -188,7 +158,8 @@ y_scaled = preprocessing.scale(y)
 
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
-
+import dask_ml
+from dask_ml.preprocessing import StandardScaler
 X_d_scaled = StandardScaler().fit_transform(X_d)
 y_d_scaled = preprocessing.scale(y_d)
 
@@ -206,21 +177,15 @@ y_d_scaled = preprocessing.scale(y_d)
 
 
 # ---------- Utiliser une librairie usuelle
-kmeans_m1 = KMeans(n_clusters = 4, init = 'k-means++', max_iter=1000, n_init = 100, random_state=0).fit(X_scaled)
-
-kmeans_model = KMeans(n_clusters = 5, random_state = 0).fit(X_scaled)
-labels = kmeans_model.labels_
-inertia = kmeans_model.inertia_
-print("nombre de clusters : "  +str(labels)+ "  -inertie : " +str(inertia))
-
-
-labels = kmeans_m1.labels_
-inertia = kmeans_m1.inertia_
-print("nombre de clusters : "  +str(labels)+ "  -inertie : " +str(inertia))
+for k in range(1,10):
+    kmeans_model = KMeans(n_clusters = k, random_state =1).fit(X_scaled)
+    labels = kmeans_model.labels_
+    inertia = kmeans_model.inertia_
+    print("nombre de clusters:" + str(k) + " - Inertie:" +str(inertia))
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-from dask.cluster import KMeans
+from dask_ml.cluster import KMeans
 kmeans_dask = KMeans(n_clusters = 4)
 kmeans_dask.fit_transform(X_d_scaled)
 cluster=kmeans_dask.labels
@@ -231,8 +196,20 @@ cluster=kmeans_dask.labels
 
 
 # ---------- Utiliser une librairie usuelle
+from scipy.spatial.distance import cdist
+distortions = []
+K = range(1,10)
+for k in K:
+    kmeanModel = KMeans(n_clusters=k, random_state =1).fit(X_scaled)
+    kmeanModel.fit(X_scaled)
+    distortions.append(sum(np.min(cdist(X_scaled, kmeanModel.cluster_centers_, 'euclidean'), axis=1)) / X_scaled.shape[0])
 
-#CODE
+# Plot the elbow
+plt.plot(K, distortions, 'bx-')
+plt.xlabel('k')
+plt.ylabel('Distortion')
+plt.title('The Elbow Method showing the optimal k')
+plt.show()
 
 
 
@@ -241,9 +218,9 @@ cluster=kmeans_dask.labels
 ### Q3.3 - A partir de combien de clusters on peut dire que partitionner n'apporte plus 
 ###        grand chose? Pourquoi?
 
-
-
-#REPONSE ECRITE (3 lignes maximum)
+print("Quand le nombre de clusters atteint le point optimal, ce qui revient à dire quand plus K augmente plus les centroïdes approchent les centroïdes des grappes")
+print("Les améliorations vont diminuer, à un moment donné, créant ainsi la forme du coude")
+print("Dans notre exemple, on peut constater à partir du nombre de clusters égal K =4, l'inertie montre une certaine stagnation ou une très faible variation à la baisse")
 
 
 
@@ -264,9 +241,11 @@ cluster=kmeans_dask.labels
 
 # ---------- Utiliser une librairie usuelle
 
-
-#CODE
-
+data_cluster = set_ech_clean[["pickup_longitude", "pickup_latitude", "dropoff_longitude", "dropoff_latitude"]]
+data_cluster["cluster"] = labels
+sample_index = np.random.randint(0, len(X_scaled), 1000)
+sns.pairplot(data_cluster.loc[sample_index, :], hue = "cluster")
+plt.show()
 
 
 
@@ -286,11 +265,39 @@ cluster=kmeans_dask.labels
 
 # ---------- Utiliser une librairie usuelle
 
-#CODE
+#imp = Imputer(missing_values ='NaN', strategy ='mean', axis=0)
+#set_ech_imp = set_ech.copy()
+#imp.fit(set_ech_imp)
+#X_acp, y_acp = set_ech_imp[input_var], set_ech_imp["fare_amount"]
+#X_acp_scaled = StandardScaler().fit_transform(X)
+y_binaire = np.zeros(len(y))
+y_binaire[y>y.median()]=1
+
+import random
+
+echantillon_plot = np.random.randint(0,len(X_scaled), 1000)
+plot_dataframe = pd.DataFrame(data=np.column_stack((y_binaire, X_scaled)), columns = variable_keep)
+plot_dataframe["fare_amount"] = plot_dataframe["fare_amount"].astype('category')
+
+
+import seaborn as sns
+sns.pairplot(plot_dataframe.loc[echantillon_plot, ], hue = "fare_amount")
+plt.show()
+
+import numpy as np
+from sklearn.decomposition import PCA
+pca = PCA(n_components = 4)
+pca_resultat = pca.fit_transform(X_scaled)
+
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-#CODE
+import dask.array as da
+from dask_ml.decomposition import PCA
+
+dX = da.from_array(X_d_scaled, chunks=X_d_scaled.shape).astype('float')
+pca = PCA(n_components = 4)
+pca.fit(dX)
 
 
 ### Q4.2 - Réaliser le diagnostic de variance avec un graphique à barre (barchart)
@@ -298,11 +305,8 @@ cluster=kmeans_dask.labels
  
 
 # ---------- Utiliser une librairie usuelle
-
-
-#CODE
-
-
+print(pca.explained_variance_ratio_)
+print(pca.singular_values_)
 
 
 ### Q4.3 - Combien de composantes doit-on garder? Pourquoi?
