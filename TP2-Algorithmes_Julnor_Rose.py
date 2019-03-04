@@ -87,7 +87,7 @@ set_ech_clean[set_ech_clean['fare_amount']<0]=0
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 train_set_clean = train_set.dropna()
-train_set_clean.loc[train_set_clean['fare_amount']>0] 
+train_set_clean.where(train_set_clean['fare_amount']<0,0) 
 
 
 # Ne garder que les variables de géolocalisation (pour le jeu de données en entrée) et
@@ -218,7 +218,7 @@ plt.show()
 ### Q3.3 - A partir de combien de clusters on peut dire que partitionner n'apporte plus 
 ###        grand chose? Pourquoi?
 
-print("Quand le nombre de clusters atteint le point optimal, ce qui revient à dire quand plus K augmente plus les centroïdes approchent les centroïdes des grappes")
+print("Quand le nombre de clusters atteint le point optimal, ce qui revient à dire plus K augmente plus les centroïdes approchent les centroïdes des grappes")
 print("Les améliorations vont diminuer, à un moment donné, créant ainsi la forme du coude")
 print("Dans notre exemple, on peut constater à partir du nombre de clusters égal K =4, l'inertie montre une certaine stagnation ou une très faible variation à la baisse")
 
@@ -265,18 +265,19 @@ plt.show()
 
 # ---------- Utiliser une librairie usuelle
 
+from sklearn.preprocessing import StandardScaler
 #imp = Imputer(missing_values ='NaN', strategy ='mean', axis=0)
 #set_ech_imp = set_ech.copy()
 #imp.fit(set_ech_imp)
-#X_acp, y_acp = set_ech_imp[input_var], set_ech_imp["fare_amount"]
-#X_acp_scaled = StandardScaler().fit_transform(X)
-y_binaire = np.zeros(len(y))
-y_binaire[y>y.median()]=1
+X_acp, y_acp = set_ech_clean[input_var], set_ech_clean["fare_amount"]
+X_acp_scaled = StandardScaler().fit_transform(X_acp)
+y_binaire = np.zeros(len(y_acp))
+y_binaire[y_acp>y_acp.median()]=1
 
 import random
 
-echantillon_plot = np.random.randint(0,len(X_scaled), 1000)
-plot_dataframe = pd.DataFrame(data=np.column_stack((y_binaire, X_scaled)), columns = variable_keep)
+echantillon_plot = np.random.randint(0,len(X_acp_scaled), 1000)
+plot_dataframe = pd.DataFrame(data=np.column_stack((y_binaire, X_acp_scaled)), columns = variable_keep)
 plot_dataframe["fare_amount"] = plot_dataframe["fare_amount"].astype('category')
 
 
@@ -287,22 +288,26 @@ plt.show()
 import numpy as np
 from sklearn.decomposition import PCA
 pca = PCA(n_components = 4)
-pca_resultat = pca.fit_transform(X_scaled)
+pca_resultat = pca.fit_transform(X_acp_scaled)
 
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
+import numpy as np
 import dask.array as da
 from dask_ml.decomposition import PCA
-
-dX = da.from_array(X_d_scaled, chunks=X_d_scaled.shape).astype('float')
+X_d_scaled = np.array(X_d_scaled)
+dX = da.from_array(X_d_scaled,chunks = X_d_scaled.shape)
 pca = PCA(n_components = 4)
 pca.fit(dX)
 
+pca = PCA(n_components=4, svd_solver ='full')
+pca.fit(X_d)
 
 ### Q4.2 - Réaliser le diagnostic de variance avec un graphique à barre (barchart)
+print(pca.explained_variance_ratio_)
+print(pca.singular_values_)
 
- 
 
 # ---------- Utiliser une librairie usuelle
 print(pca.explained_variance_ratio_)
@@ -324,9 +329,30 @@ print(pca.singular_values_)
  
 
 # ---------- Utiliser une librairie usuelle
+pca_nouveau = pd.DataFrame(data=np.column_stack((y_binaire, pca_resultat)),columns = ['fare_amount', 'PC1', 'PC2', 'PC3', 'PC4'])
+pca_nouveau['fare_amount'] = pca_nouveau["fare_amount"].astype('category')
+sns.pairplot(pca_nouveau.loc[echantillon_plot, ], hue ="fare_amount")
 
 
-#CODE
+xvector = pca_resultat.components_[0] 
+yvector = pca_resultat.components_[1]
+
+xs = pca_resultat.transform(X_acp_scaled)[:,0] 
+ys = pca_resultat.transform(X_acp_scaled)[:,1]
+
+for i in range(len(xvector)):
+    plt.arrow(0, 0, xvector[i]*max(xs), yvector[i]*max(ys),
+              color='r', width=0.0005, head_width=0.0025)
+    plt.text(xvector[i]*max(xs)*1.2, yvector[i]*max(ys)*1.2,
+             list(X_acp_scaled.columns.values)[i], color='r')
+
+for i in range(len(xs)):
+    plt.plot(xs[i], ys[i], 'bo')
+    plt.text(xs[i]*1.2, ys[i]*1.2, list(X_acp_scaled.index)[i], color='b')
+
+plt.show()
+
+
 
 
 
@@ -357,12 +383,21 @@ print(pca.singular_values_)
 
 
 # ---------- Utiliser une librairie usuelle
-
-#CODE
-
+from sklearn import linear_model
+X_scaled = preprocessing.scale(X)
+y_scaled = preprocessing.scale(y)
+regr = linear_model.LinearRegression()
+regr.fit(X_scaled, y_scaled)
+regr.score(X_scaled, y_scaled)
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
+import dask_ml
+from dask_ml.preprocessing import StandardScaler
+X_d_scaled = StandardScaler().fit_transform(X_d)
+y_d_scaled = preprocessing.scale(y_d)
 
-#CODE
+from dask_glm.estimators import LinearRegression
+lr = LinearRegression()
+lr.fit(X_d_scaled, y_d_scaled)
 
 
 ### Q5.2 - Que pouvez-vous dire des résultats du modèle? Quelles variables sont significatives?
@@ -381,7 +416,7 @@ print(pca.singular_values_)
 
 # ---------- Utiliser une librairie usuelle
 
-#CODE
+prediction_biglm = lr.predict(X_d_scaled)
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
