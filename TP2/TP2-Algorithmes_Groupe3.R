@@ -327,13 +327,9 @@ library(bigpca)
   Model_lm_c <- lm(formule_lm, data = train_echantillon)
   summary(Model_lm_c)
   
-# ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
-  library(biglm)
-  input_b_ns <- c("pickup_longitude", "pickup_latitude", "dropoff_longitude", "dropoff_latitude")
-  formule_lm_b <- as.formula(paste0("fare_amount~", paste0(input_b_ns, collapse = " + ")))
-  Model_blm_b <- bigglm.big.matrix(formule_lm_b , data = train)
-  summary(Model_blm_b)
   
+# ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
+
   
 
 ### Q5.2 - Que pouvez-vous dire des résultats du modèle? Quelles variables sont significatives?
