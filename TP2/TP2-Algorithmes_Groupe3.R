@@ -37,6 +37,8 @@
     library(bigmemory)
     library(ff)
     library(tidyverse)
+    library(gvlma)
+    library(ModelMetrics)
 
 
 #
@@ -348,9 +350,14 @@
 
 # ---------- Utiliser une librairie usuelle
 
-   train_e_app <- sample(nrow(train_echantillon)*0.6)
-   train_e_val <- sample(nrow(train_echantillon)*0.2)
-   train_e_test <- sample(nrow(train_echantillon)*0.2)
+   sample1 <-sample(nrow(train_echantillon)*0.6)
+   sample2 <-sample(nrow(train_echantillon)*0.2)
+   sample3<- sample(nrow(train_echantillon)*0.2)
+   
+   train_e_app <-train_echantillon[sample1, ]
+   train_e_val <-train_echantillon[sample2, ]
+   train_e_test <-train_echantillon[sample3, ]
+   
    
    input_c <- train_echantillon[ , -grep("fare_amount", names(train_echantillon))]
    output_c <- train_echantillon[ , "fare_amount"]
@@ -358,49 +365,42 @@
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-CODE
+#CODE
 
 # Réaliser la régression linéaire sur l'échantillon d'apprentissage, tester plusieurs valeurs
 # de régularisation (hyperparamètre de la régression linéaire) et la qualité de prédiction sur l'échantillon de validation. 
 
 
 # ---------- Utiliser une librairie usuelle
-
-  Model_lm_c_app <- lm(formule_lm, data=train_app)
+  Model_lm_c_app <- lm(fare_amount ~ ., data=train_e_app)
   summary(Model_lm_c_app)
   predictionlm=predict(Model_lm_c_app, input_c)
-
-  #visualisation de la pr�diction � partir des valeurs r�elles
-  plot(y_output, prediction.lm, pch=19,cex=0.8)
+  plot(output_c, predictionlm, pch=15,cex=0.8)
   
   
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-CODE
+#CODE
 
 # Calculer le RMSE et le R² sur le jeu de test.
 
 
 
 # ---------- Utiliser une librairie usuelle
-
-CODE
+  Model_lm_c_test <- lm(fare_amount ~ ., data=train_e_test)
+  summary(Model_lm_c_test)
+  predictionlm_test=predict(Model_lm_c_test, input_c)
+  ModelMetrics::rmse(output_c, predictionlm_test)
+  Rsquared <- function (p, q) cor(p, q) ^ 2
+  Rsquared(output_c, predictionlm_test) 
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-CODE
+    CODE
 
 # Quelle est la qualité de la prédiction sur le jeu de test ?
-
-
-REPONSE ECRITE (3 lignes maximum)
-
-
-
-
-
-
-
+    gvlma(Model_lm_c_test) # les tests ge qualite ne sont ps satisfaits
+    
 
 #
 # QUESTION 6 - REGRESSION LOGISTIQUE
@@ -417,8 +417,16 @@ REPONSE ECRITE (3 lignes maximum)
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
-
+    input_c <- train_echantillon[ , -grep("fare_amount", names(train_echantillon))]
+    output_c <- train_echantillon[ , "fare_amount"]
+    
+    input_c=scale(input_c)
+    output_c_binaire=rep(0,nrow(train_echantillon))
+    output_c_binaire[output_c>median(output_c)] <- 1
+    train_echantillon$output_c_binaire <- output_c_binaire
+    
+    
+    
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
 CODE
@@ -429,8 +437,9 @@ CODE
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
-
+  Model_logit_c <- glm(output_c_binaire ~ ., family = binomial(link="logit"), data = train_echantillon)
+  summary(Model_logit_c)
+  
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
 CODE
@@ -439,11 +448,8 @@ CODE
 
 
 ### Q6.2 - Que pouvez-vous dire des résultats du modèle? Quelles variables sont significatives?
-
-
-
-REPONSE ECRITE (3 lignes maximum)
-
+  
+  # Aucune variable nest significative 
 
 
 ### Q6.3 - Prédire la probabilité que la course soit plus élevée que la médiane
@@ -455,7 +461,18 @@ REPONSE ECRITE (3 lignes maximum)
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
+    sample1 <-sample(nrow(train_echantillon)*0.6)
+    sample2 <-sample(nrow(train_echantillon)*0.2)
+    sample3<- sample(nrow(train_echantillon)*0.2)
+    
+    train_e_app <-train_echantillon[sample1, ]
+    train_e_val <-train_echantillon[sample2, ]
+    train_e_test <-train_echantillon[sample3, ]
+    
+    
+    input_c <- train_echantillon[ , -grep("fare_amount", names(train_echantillon))]
+    output_c <- train_echantillon[ , "fare_amount"]
+
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
@@ -468,7 +485,19 @@ CODE
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
+    Model_logit_c_app <- glm(output_c_binaire ~ ., family = binomial(link="logit"), data = train_e_app)
+    summary(Model_logit_c_app)
+    
+    prediction_est = predict(Model_logit_c_app, train_e_test , type='response')
+    
+    prediction_train_binaire=rep(0, length(prediction_train))
+    seuil_binaire=0.5
+    prediction_train_binaire[prediction_train>seuil_binaire]=1
+    matrice_confusion=table(train_ech.train$fare_binaire, prediction_train_binaire)
+    #Taux d'erreur
+    1-sum(diag(matrice_confusion))/sum(matrice_confusion) #0.3917684
+    
+
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
