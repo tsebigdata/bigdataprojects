@@ -45,22 +45,25 @@
 
 
 ### Q1.1 - Indiquer le dossier et le fichier cible
-
-    setwd("C:/Users/rosec/Dropbox/TSE/BigData/Project/bigdataprojects/TP2")
+  
+    dossier <- "C:/Users/rosec/Dropbox/TSE/BigData/Project/bigdataprojects/TP2/"
+    train <- "train.csv"
+    train_echantillon <- "train_echantillon.csv"
+    chemin_train <- paste0(dossier, train)
+    chemin_train_e <- paste0(dossier,train_echantillon)
 
 
 ### Q1.2 - Importer les jeux de données complets et échantillonnés
 
 # ---------- Utiliser une librairie usuelle (version de fichier échantillonnée)
     
-    train_echantillon <- fread("train_echantillon.csv")
+    train_echantillon <- fread(chemin_train_e)
     train_echantillon <- as.data.frame(train_echantillon)
 
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory) (version complète du fichier)
 
-    train <- read.big.matrix("train.csv", header=T, type = "integer")
-
+    train <- read.big.matrix(chemin_train, header=T, type = "integer")
 
 #
 # QUESTION 2 - PREPARATION/NETTOYAGE DU JEU DE DONNEES
@@ -84,9 +87,11 @@
     train_echantillon <- train_echantillon[which(train_echantillon$fare_amount>=0),]
     
     # on remarque aussi que pour certaines observations, le nombre de passagers dans le taxi depasse un nombre raisonnable (208)
-    # On decide de retenir 6 passagers au maximum etant donne que 99% des taxis de lechantillon ont 6 passagers ou moins 
-    quantile(train_echantillon$passenger_count, p=c(0.25, 0.50, 0.75, 0.99))
-    train_echantillon <- train_echantillon[which(train_echantillon$passenger_count<=6),]
+    # On decide dutiliser le IQR pr filtrer le nombre de passager 
+    
+    cutoff_train_e <- quantile(train_echantillon$passenger_count, 0.75) +1.5*IQR(train_echantillon$passenger_count)
+    outlier_train_e<- which(train_echantillon$passenger_count>cutoff_train_e)
+    train_echantillon <- train_echantillon[-outlier_train_e,]
     summary(train_echantillon)
     
     
@@ -96,7 +101,7 @@
     summary(train) # les memes constats sont faits pour la base "train"
     colnames(train)
     train <- train[train[, "fare_amount"] >= 0, ]
-    train <- train[train[, "passenger_count"]<=6, ]
+    train <- train[train[, "passenger_count"]<=3, ]
     
     summary(train)
     train <- na.omit(train)
@@ -156,8 +161,7 @@
 # ---------- Utiliser une librairie usuelle
   
     regvar <- c("fare_amount", "fare_amount","pickup_longitude","pickup_latitude", "dropoff_longitude","dropoff_latitude" )
-    train <- as.data.frame(scale(apply(train, 2, as.numeric)))
-   
+
     #for (var in regvar){ hist(train[, var], main=var)} -> run later
     #pairs(train[, regvar]) -> run later
 
@@ -186,37 +190,36 @@
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
-
-
+    input_c<-scale(input_c)
+    output_c <-scale(output_c)
+    
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-
-CODE
-
-
-
-
-
-
+    input_b <- scale(input_b)
+    output_b <- scale(output_b)
+    
 
 #
 # QUESTION 3 - CLUSTERING DU JEU DE DONNEES
 # 
-
-
-
 
 ### Q3.1 - Réaliser un clustering k-means sur les données d'entrée standardisées
 
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
+    set.seed(20)
+    kmeans_clusters_c <- kmeans(input_c, centers = 6,
+                              iter.max = 100, algorithm = "Lloyd")
+    str(kmeans_clusters_c)
+    
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
-
-CODE
+    #library(biganalytics)
+   # set.seed(20)
+   # k_means_clusters_b <- bigkmeans(input_b, centers = 6,
+                                    iter.max = 100, nstart = 1,
+                                    dist = "euclid")
 
 
 
@@ -224,31 +227,30 @@ CODE
 
 
 # ---------- Utiliser une librairie usuelle
-
-CODE
-
-
-
+    
+    for(cluster_num in 1:10){
+      kmeans_clusters_c <- kmeans(input_c, centers = cluster_num,
+                                iter.max = 200, algorithm = "Lloyd")
+      print(paste0(cluster_num ,
+                   " clusters - Inertie: ",
+                   kmeans_clusters_c$tot.withinss))}
 
 
 ### Q3.3 - A partir de combien de clusters on peut dire que partitionner n'apporte plus 
 ###        grand chose? Pourquoi?
-
-
-
-REPONSE ECRITE (3 lignes maximum)
-
-
-
+  
+    # A partir du 6eme cluster
 
 
 ### Q3.4 - Comment pouvez-vous qualifier les clusters obtenus selon les variables originales?
 ###        Par exemple, y a-t-il des clusters selon la localisation ? 
 
+    index_plot_c <- sample(nrow(input_c), 1000)
+    pairs(input_c[index_plot_c, ], col= kmeans_clusters_c$cluster[index_plot_c],pch=19)
+
+  
 
 
-
-REPONSE ECRITE (3 lignes maximum)
 
 
 
