@@ -278,7 +278,8 @@
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-library(bigpca)
+    library(bigpca)
+    ACP_b <- 
 
 
 ### Q4.2 - Réaliser le diagnostic de variance avec un graphique à barre (barchart)
@@ -300,10 +301,7 @@ library(bigpca)
  
 # ---------- Utiliser une librairie usuelle
 
-
   biplot(ACP_c)
-
-
 
 ### Q4.5 - Comment les variables initiales se situent-elles par rapport aux 2 premières CP? 
 
@@ -329,9 +327,11 @@ library(bigpca)
   
   
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
-
-  #input_b_ns <- c("fare_amount","pickup_longitude", "pickup_latitude","dropoff_longitude","dropoff_latitude")
-  #formule_blm <- as.formula(paste0("fare_amount ~", paste0(input_b_ns, collapse = "+")))
+  
+  
+ # input_b <- train[ , -grep("fare_amount", names(train))]
+  #output_b <- train[ , "fare_amount"]
+  #formule_blm <- as.formula(paste0(output_b, paste0(input_b_ns, collapse = "+")))
   #Model_blm_b <- bigglm.big.matrix(formule_blm, data = train)
 
 ### Q5.2 - Que pouvez-vous dire des résultats du modèle? Quelles variables sont significatives?
@@ -358,10 +358,7 @@ library(bigpca)
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-   train_app <- sample(nrow(train)*0.6)
-   train_val <- sample(nrow(train)*0.2)
-   train_test <- sample(nrow(train)*0.2)
-
+CODE
 
 # Réaliser la régression linéaire sur l'échantillon d'apprentissage, tester plusieurs valeurs
 # de régularisation (hyperparamètre de la régression linéaire) et la qualité de prédiction sur l'échantillon de validation. 
@@ -369,8 +366,14 @@ library(bigpca)
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
+  Model_lm_c_app <- lm(formule_lm, data=train_app)
+  summary(Model_lm_c_app)
+  predictionlm=predict(Model_lm_c_app, input_c)
 
+  #visualisation de la pr�diction � partir des valeurs r�elles
+  plot(y_output, prediction.lm, pch=19,cex=0.8)
+  
+  
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
 CODE
