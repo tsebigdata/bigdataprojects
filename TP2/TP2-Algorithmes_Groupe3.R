@@ -330,14 +330,13 @@ library(bigpca)
   
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-  
+  #input_b_ns <- c("fare_amount","pickup_longitude", "pickup_latitude","dropoff_longitude","dropoff_latitude")
+  #formule_blm <- as.formula(paste0("fare_amount ~", paste0(input_b_ns, collapse = "+")))
+  #Model_blm_b <- bigglm.big.matrix(formule_blm, data = train)
 
 ### Q5.2 - Que pouvez-vous dire des résultats du modèle? Quelles variables sont significatives?
-    # Aucune des
-
-
-
-REPONSE ECRITE (3 lignes maximum)
+    
+  # Aucune des variables n'est significatives 
 
 
 
@@ -349,11 +348,19 @@ REPONSE ECRITE (3 lignes maximum)
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
+   train_e_app <- sample(nrow(train_echantillon)*0.6)
+   train_e_val <- sample(nrow(train_echantillon)*0.2)
+   train_e_test <- sample(nrow(train_echantillon)*0.2)
+   
+   input_c <- train_echantillon[ , -grep("fare_amount", names(train_echantillon))]
+   output_c <- train_echantillon[ , "fare_amount"]
+   
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-CODE
+   train_app <- sample(nrow(train)*0.6)
+   train_val <- sample(nrow(train)*0.2)
+   train_test <- sample(nrow(train)*0.2)
 
 
 # Réaliser la régression linéaire sur l'échantillon d'apprentissage, tester plusieurs valeurs
