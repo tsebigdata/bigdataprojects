@@ -82,16 +82,24 @@
     train_echantillon <- na.omit(train_echantillon)
     train_echantillon[!complete.cases(train_echantillon)]
     train_echantillon <- train_echantillon[which(train_echantillon$fare_amount>=0),]
+    
+    # on remarque aussi que pour certaines observations, le nombre de passagers dans le taxi depasse un nombre raisonnable (208)
+    # On decide de retenir 6 passagers au maximum etant donne que 99% des taxis de lechantillon ont 6 passagers ou moins 
+    quantile(train_echantillon$passenger_count, p=c(0.25, 0.50, 0.75, 0.99))
+    train_echantillon <- train_echantillon[which(train_echantillon$passenger_count<=6),]
     summary(train_echantillon)
+    
     
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
     dim(train)
     summary(train) # les memes constats sont faits pour la base "train"
     colnames(train)
-    train <- 
-    train <- na.omit(train)  
     train <- train[train[, "fare_amount"] >= 0, ]
+    train <- train[train[, "passenger_count"]<=6, ]
+    
+    summary(train)
+    train <- na.omit(train)
     summary(train)
     
 
@@ -125,34 +133,33 @@
     summary(train_echantillon)
     # On remarque des valeurs aberrantes pour les variables de latitude et de longitude. Logiquement, les valeurs de latitude sont comprises entre -90 et +90 
      # et les valeurs de longitude entre -180 et +180. Bien qu' il soit difficile d'imaginer un taxi transportant un passer de New York a Shanghai (Chine),
-     # on a tres peu d'information sur les parcours. Par consequent, on retiendra les valeurs scientifiques et restraindre ces valeurs aux intervalles ci-dessus. 
+     # on a tres peu d'information sur les parcours. Par consequent, on retiendra les intervalles [-39, +41] pour la latitude et [-73,+75] pour la longitude. 
     
-    train_echantillon <- subset(train_echantillon, pickup_longitude >= -180 & pickup_longitude <= 180 & 
-                                  dropoff_longitude >= -180 & dropoff_longitude <= 180 &
-                                  pickup_latitude >= -90 & pickup_latitude <= 90 & 
-                                  dropoff_latitude >= -90 & dropoff_latitude <= 90)
-    
+    train_echantillon <- subset(train_echantillon, pickup_longitude >= -73 & pickup_longitude <= 75 & 
+                                  dropoff_longitude >= -73 & dropoff_longitude <= 75 &
+                                  pickup_latitude >= -39 & pickup_latitude <= 41 & 
+                                  dropoff_latitude >= -39 & dropoff_latitude <= 41)
     
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
     
-  summary(train) # le meme constant est fait concernant la plus grande base 
-  train <- train[train[,"pickup_longitude"] >= -180 & train[ ,"pickup_longitude"] <= 180 &
-                      train[,"dropoff_longitude"] >= -180 & train[ ,"dropoff_longitude"] <= 180 &
-                      train[,"pickup_latitude"]>= -90 & train[ ,"pickup_latitude"] <= 90 &
-                      train[,"dropoff_latitude"]>= -90 & train[ ,"dropoff_latitude"] <= 90, ]
-
+    summary(train) # le meme constant est fait concernant la plus grande base 
+    train <- train[train[,"pickup_longitude"] >= -73 & train[ ,"pickup_longitude"] <= 75 &
+                        train[,"dropoff_longitude"] >= -73 & train[ ,"dropoff_longitude"] <= 75 &
+                        train[,"pickup_latitude"]>= -39 & train[ ,"pickup_latitude"] <= 41 &
+                        train[,"dropoff_latitude"]>= -39 & train[ ,"dropoff_latitude"] <= 41, ]
+  
 # Visualiser les distributions des variables d'entrée et de sortie (histogramme, pairplot)
-  summary(train_echantillon)
-  summary(train)
+    summary(train_echantillon)
+    summary(train)
 
 # ---------- Utiliser une librairie usuelle
-
-  for (var in train){
-    hist(train[, var],
-         main=var())
-  }
-  pairs
+  
+    regvar <- c("fare_amount", "fare_amount","pickup_longitude","pickup_latitude", "dropoff_longitude","dropoff_latitude" )
+    train <- as.data.frame(scale(apply(train, 2, as.numeric)))
+   
+    #for (var in regvar){ hist(train[, var], main=var)} -> run later
+    #pairs(train[, regvar]) -> run later
 
 
 
@@ -164,12 +171,14 @@
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
-
+    input_c <- train_echantillon[ , -grep("fare_amount", names(train_echantillon))]
+    output_c <- train_echantillon[ , "fare_amount"]
+    
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-
-CODE
+    input_b <- train[ , -grep("fare_amount", names(train))]
+    output_b <- train[ , "fare_amount"]
+    
 
 
 # Standardiser la matrice d'entrée et les vecteurs de sortie (créer un nouvel objet)
