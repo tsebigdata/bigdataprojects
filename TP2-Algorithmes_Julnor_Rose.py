@@ -80,11 +80,18 @@ set_ech.isnull().sum().sum()
 
 set_ech_clean = set_ech.dropna()
 
-# On pense que le coût de le course ne peut être négatif, on va remplacer les
+# On pense que le coût de la course ne peut être négatif, on va remplacer les
 # valeurs négatives par zéro
 
 set_ech_clean[set_ech_clean['fare_amount']<0]=0
-
+set_ech_clean.where(set_ech_clean['pickup_latitude'] >= -90, ['pickup_latitude'])
+set_ech_clean.where(set_ech_clean['pickup_latitude'] <= 90, ['pickup_latitude'])
+set_ech_clean.where(set_ech_clean['pickup_longitude'] >= -180),['pickup_longitude']
+set_ech_clean.where(set_ech_clean['pickup_longitude'] <= 180, ['pickup_longitude'])
+set_ech_clean.where(set_ech_clean['dropoff_latitude'] >= -90, ['dropoff_latitude'])
+set_ech_clean.where(set_ech_clean['dropoff_latitude'] <= 90, ['dropoff_latitude'])
+set_ech_clean.where(set_ech_clean['dropoff_longitude'] >= -180, ['dropoff_longitude'])
+set_ech_clean.where(set_ech_clean['dropoff_longitude'] <= 180, ['dropoff_longitude'])
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 train_set_clean = train_set.dropna()
 train_set_clean.where(train_set_clean['fare_amount']<0,0) 
@@ -112,7 +119,6 @@ X_d, y_d = train_set_clean[input_var], train_set_clean["fare_amount"]
 print("***** Statistiques de base : sample****")
 X.describe()
 y.describe()
-
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
@@ -388,7 +394,14 @@ X_scaled = preprocessing.scale(X)
 y_scaled = preprocessing.scale(y)
 regr = linear_model.LinearRegression()
 regr.fit(X_scaled, y_scaled)
+from sklearn.metrics import mean_squared_error, r2_score
+prediction_lm = regr.predict(X_scaled)
 regr.score(X_scaled, y_scaled)
+print('Coefficients: \n', regr.coef_)
+print("Erreur (RMS: %.2f2" % mean_squared_error(y_scaled, prediction_lm))
+print('variance score: %.2f' % r2_score(y_scaled, prediction_lm))
+
+
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 import dask_ml
 from dask_ml.preprocessing import StandardScaler
@@ -415,22 +428,36 @@ lr.fit(X_d_scaled, y_d_scaled)
 
 
 # ---------- Utiliser une librairie usuelle
-
-prediction_biglm = lr.predict(X_d_scaled)
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.4, random_state=1)
+X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=1)
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-#CODE
-
-
+X_d_train, X_d_test = X_d_scaled.random_split([0.6, 0.4], random_state=2)
+y_d_train, y_d_test = train_test_split(y_d_scaled, test_size=0.6, random_state=1)
+X_d_test, X_d_val = X_d_test.random_split([0.5, 0.5], random_state = 2)
+y_d_test, y_d_val = train_test_split(y_d_test, test_size = 0.5, random_state=1)
 # Réaliser la régression linéaire sur l'échantillon d'apprentissage, tester plusieurs valeurs
 # de régularisation (hyperparamètre de la régression linéaire) et la qualité de prédiction sur l'échantillon de validation. 
 
 
 # ---------- Utiliser une librairie usuelle
 
-#CODE
+X1, X2, y1, y2 = train_test_split(X, y, random_state=0,
+                                  train_size=0.5)
 
+# fit the model on one set of data
+regr.fit(X_train, y_train)
+
+# evaluate the model on the second set of data
+from sklearn.metrics import accuracy_score
+y2_model = regr.predict(X_val)
+accuracy_score(y_test, y2_model)
+
+len(X_val)
+len(X_scaled)
+len(X_train)
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
 #CODE
