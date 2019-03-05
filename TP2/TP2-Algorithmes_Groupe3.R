@@ -222,7 +222,6 @@
                                     dist = "euclid")
 
 
-
 ### Q3.2 - Tracer la figure de l'inertie intraclusters et du R² en fonction du nombre de  clusters
 
 
@@ -245,29 +244,17 @@
 ### Q3.4 - Comment pouvez-vous qualifier les clusters obtenus selon les variables originales?
 ###        Par exemple, y a-t-il des clusters selon la localisation ? 
 
-    index_plot_c <- sample(nrow(input_c), 1000)
-    pairs(input_c[index_plot_c, ], col= kmeans_clusters_c$cluster[index_plot_c],pch=19)
 
   
-
-
-
-
 
 ### Q3.5 - Visualiser les clusters avec des couleurs différentes sur un 'pairplot' avec plusieurs variables
 
 
 # ---------- Utiliser une librairie usuelle
 
-
-CODE
-
-
-
-
-
-
-
+    
+    index_plot_c <- sample(nrow(input_c), 1000)
+    pairs(input_c[index_plot_c, ], col= kmeans_clusters_c$cluster[index_plot_c],pch=19)
 
 
 #
@@ -275,72 +262,59 @@ CODE
 # 
 
 
-
 ### Q4.1 - Faire une ACP sur le jeu de données standardisé
 
 
 # ---------- Utiliser une librairie usuelle
-
-CODE
+    summary(train_echantillon) #pas de valeurs manquantes
+    output_c_binaire <- rep(0, nrow(train_echantillon))
+    output_c_binaire[output_c>median(output_c)] <- 1
+    
+    input_c <- scale(input_c)
+    
+    ACP_c <- prcomp(input_c, center = T, scale. = T)
+    print(ACP_c)
+    
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-CODE
+library(bigpca)
 
 
 ### Q4.2 - Réaliser le diagnostic de variance avec un graphique à barre (barchart)
 
  
-
 # ---------- Utiliser une librairie usuelle
-
-
-CODE
-
-
+  summary(ACP_c)
+  plot(ACP_c)
 
 
 ### Q4.3 - Combien de composantes doit-on garder? Pourquoi?
        
-
-
-REPONSE ECRITE (3 lignes maximum)
-
-
+  # On peut garder  2 composantes et on aura ainsi plus de 92% des variances.  
 
 
 ### Q4.4 - Tracer un graphique 'biplot' indiquant les variables initiales selon les 2 premières CP
 ###        Sélectionner éventuellement un sous-échantillon de points pour faciliter la visualisation
 
  
-
 # ---------- Utiliser une librairie usuelle
 
 
-CODE
-
+  biplot(ACP_c)
 
 
 
 ### Q4.5 - Comment les variables initiales se situent-elles par rapport aux 2 premières CP? 
 
 
-REPONSE ECRITE (3 lignes maximum)
+    # Elles sont tres liees a la composante principale, un peu moins a la composante secondaire
 
-
-
-
-
-
-
-
-
-
-
+  
+  
 #
 # QUESTION 5 - REGRESSION LINEAIRE
 # 
-
 
 
 ### Q5.1 - Mener une régression linéaire de la sortie "fare_amount" 
@@ -349,14 +323,21 @@ REPONSE ECRITE (3 lignes maximum)
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
-
+  formule_lm <- as.formula(fare_amount ~ . )
+  Model_lm_c <- lm(formule_lm, data = train_echantillon)
+  summary(Model_lm_c)
+  
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
-
-CODE
-
+  library(biglm)
+  input_b_ns <- c("pickup_longitude", "pickup_latitude", "dropoff_longitude", "dropoff_latitude")
+  formule_lm_b <- as.formula(paste0("fare_amount~", paste0(input_b_ns, collapse = " + ")))
+  Model_blm_b <- bigglm.big.matrix(formule_lm_b , data = train)
+  summary(Model_blm_b)
+  
+  
 
 ### Q5.2 - Que pouvez-vous dire des résultats du modèle? Quelles variables sont significatives?
+    # Aucune des
 
 
 
