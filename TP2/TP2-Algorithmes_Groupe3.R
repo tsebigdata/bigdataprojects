@@ -216,11 +216,7 @@
     
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
-    #library(biganalytics)
-   # set.seed(20)
-   # k_means_clusters_b <- bigkmeans(input_b, centers = 6,
-                                    iter.max = 100, nstart = 1,
-                                    dist = "euclid")
+
 
 
 ### Q3.2 - Tracer la figure de l'inertie intraclusters et du RÂ² en fonction du nombre de  clusters
@@ -239,14 +235,13 @@
 ### Q3.3 - A partir de combien de clusters on peut dire que partitionner n'apporte plus 
 ###        grand chose? Pourquoi?
   
-    # A partir du 6eme cluster
-
+    #Dans notre exemple, on peut constater à partir du nombre de clusters égal K =4, l'inertie montre une certaine stagnation ou une très faible variation à la baisse")
+    
 
 ### Q3.4 - Comment pouvez-vous qualifier les clusters obtenus selon les variables originales?
 ###        Par exemple, y a-t-il des clusters selon la localisation ? 
 
 
-  
 
 ### Q3.5 - Visualiser les clusters avec des couleurs diffÃ©rentes sur un 'pairplot' avec plusieurs variables
 
