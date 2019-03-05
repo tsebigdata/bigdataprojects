@@ -2,7 +2,7 @@
 # Master 2 Econometrics & Statistics 
 # Universit� Toulouse-Capitole 
 # Ann�e 2 - Semestre 2 - Big Data 
-# @author: Julnor Georges, Boris Ombede, Rose-Camille Vincent
+# @author: Group 3
 ##############################################################################
 
 
@@ -139,8 +139,7 @@
 
     summary(train_echantillon)
     # On remarque des valeurs aberrantes pour les variables de latitude et de longitude. Logiquement, les valeurs de latitude sont comprises entre -90 et +90 
-     # et les valeurs de longitude entre -180 et +180. Bien qu' il soit difficile d'imaginer un taxi transportant un passer de New York a Shanghai (Chine),
-     # on a tres peu d'information sur les parcours. Par consequent, on retiendra les intervalles [-39, +41] pour la latitude et [-73,+75] pour la longitude. 
+     # et les valeurs de longitude entre -180 et +180. On retiendra les intervalles [-39, +41] pour la latitude et [-73,+75] pour la longitude. 
     
     train_echantillon <- subset(train_echantillon, pickup_longitude >= -73 & pickup_longitude <= 75 & 
                                   dropoff_longitude >= -73 & dropoff_longitude <= 75 &
@@ -164,8 +163,8 @@
   
     regvar <- c("fare_amount", "fare_amount","pickup_longitude","pickup_latitude", "dropoff_longitude","dropoff_latitude" )
 
-    #for (var in regvar){ hist(train[, var], main=var)} -> run later
-    #pairs(train[, regvar]) -> run later
+    # for (var in regvar){ hist(train[, var], main=var)}  ==> not run (timing issues)
+    # pairs(train[, regvar]) ==> not run (timing issues)
 
 
 
@@ -381,6 +380,8 @@
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
 #CODE
+  
+  
 
 # Calculer le RMSE et le R² sur le jeu de test.
 
@@ -389,14 +390,14 @@
 # ---------- Utiliser une librairie usuelle
   Model_lm_c_test <- lm(fare_amount ~ ., data=train_e_test)
   summary(Model_lm_c_test)
-  predictionlm_test=predict(Model_lm_c_test, input_c)
-  ModelMetrics::rmse(output_c, predictionlm_test)
-  Rsquared <- function (p, q) cor(p, q) ^ 2
-  Rsquared(output_c, predictionlm_test) 
+  predictionlm_test<-predict(Model_lm_c_test, input_c)
+  ModelMetrics::rmse(output_c, predictionlm_test) #12.98
+  Rsquared <- function (p, q) cor(p, q) ^ 2 #
+  Rsquared(output_c, predictionlm_test) #0.000
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
-    CODE
+#CODE
 
 # Quelle est la qualité de la prédiction sur le jeu de test ?
     gvlma(Model_lm_c_test) # les tests ge qualite ne sont ps satisfaits
@@ -419,11 +420,10 @@
 
     input_c <- train_echantillon[ , -grep("fare_amount", names(train_echantillon))]
     output_c <- train_echantillon[ , "fare_amount"]
-    
     input_c=scale(input_c)
     output_c_binaire=rep(0,nrow(train_echantillon))
     output_c_binaire[output_c>median(output_c)] <- 1
-    train_echantillon$output_c_binaire <- output_c_binaire
+    train_echantillon$fare_binaire <- output_c_binaire
     
     
     
@@ -437,7 +437,7 @@ CODE
 
 # ---------- Utiliser une librairie usuelle
 
-  Model_logit_c <- glm(output_c_binaire ~ ., family = binomial(link="logit"), data = train_echantillon)
+  Model_logit_c <- glm(fare_binaire ~ ., family = binomial(link="logit"), data = train_echantillon)
   summary(Model_logit_c)
   
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
@@ -445,11 +445,11 @@ CODE
 CODE
 
 
-
-
 ### Q6.2 - Que pouvez-vous dire des résultats du modèle? Quelles variables sont significatives?
   
   # Aucune variable nest significative 
+
+
 
 
 ### Q6.3 - Prédire la probabilité que la course soit plus élevée que la médiane
@@ -470,9 +470,6 @@ CODE
     train_e_test <-train_echantillon[sample3, ]
     
     
-    input_c <- train_echantillon[ , -grep("fare_amount", names(train_echantillon))]
-    output_c <- train_echantillon[ , "fare_amount"]
-
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
@@ -485,18 +482,14 @@ CODE
 
 # ---------- Utiliser une librairie usuelle
 
-    Model_logit_c_app <- glm(output_c_binaire ~ ., family = binomial(link="logit"), data = train_e_app)
+    Model_logit_c_app <- glm(fare_binaire ~ ., family = binomial(link="logit"), data = train_e_app)
     summary(Model_logit_c_app)
-    
-    prediction_est = predict(Model_logit_c_app, train_e_test , type='response')
-    
-    prediction_train_binaire=rep(0, length(prediction_train))
-    seuil_binaire=0.5
-    prediction_train_binaire[prediction_train>seuil_binaire]=1
-    matrice_confusion=table(train_ech.train$fare_binaire, prediction_train_binaire)
-    #Taux d'erreur
-    1-sum(diag(matrice_confusion))/sum(matrice_confusion) #0.3917684
-    
+    prediction <- predict( Model_logit_c_app, train_echantillon , type='response')
+    prediction_bin <- rep(0, length(prediction))
+    seuil_bin <- 0.5
+    prediction_bin[prediction>seuil_bin] <- 1
+    matrice_conf <- table(train_echantillon$fare_bin, prediction_bin)
+    round(matrice_conf*100 / sum(matrice_conf),1)    
 
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
@@ -510,7 +503,22 @@ CODE
 
 # ---------- Utiliser une librairie usuelle
 
-CODE
+prediction_test <- predict(Model_logit_c_app, train_e_test , type='response')
+prediction_bin_test <- rep(0, length(prediction_test))
+prediction_bin_test[prediction_test>seuil_bin] <- 1
+matrice_conf_test <- table(train_e_test$fare_binaire, prediction_bin_test)
+round(matrice_conf_test*100 /sum(matrice_conf_test), 1)
+
+library(ROCR)
+pr <-prediction(prediction_test, train_e_test$fare_binaire)
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+auc <- performance(pr, measure = "auc")
+auc <- auc@y.values[[1]]
+auc # 0.88
+
+
 
 # ---------- Utiliser une librairie 'Big Data' (Dask ou bigmemory)
 
@@ -520,9 +528,7 @@ CODE
 # Quelle est la qualité de la prédiction sur le jeu de test ?
 
 
-REPONSE ECRITE (3 lignes maximum)
-
-
+  # Bonne prediction . AUC=0.88
 
 
 
